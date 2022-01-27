@@ -5,6 +5,32 @@ use syn::punctuated::Punctuated;
 use syn::Token;
 use syn::*;
 
+fn derive_attr() -> Attribute {
+    Attribute {
+        pound_token: Default::default(),
+        style: AttrStyle::Outer,
+        bracket_token: Default::default(),
+        path: Path {
+            leading_colon: std::option::Option::None,
+            segments: Punctuated::new(),
+        },
+        tokens: quote! { derive(Clone,Debug) },
+    }
+}
+
+fn repr_c_attr() -> Attribute {
+    Attribute {
+        pound_token: Default::default(),
+        style: AttrStyle::Outer,
+        bracket_token: Default::default(),
+        path: Path {
+            leading_colon: std::option::Option::None,
+            segments: Punctuated::new(),
+        },
+        tokens: quote! { repr(C) },
+    }
+}
+
 // This will be parsed into the TokenStream.
 // We need to define a new return struct,
 // since tuples are not stable / usable trough the c-abi.
@@ -12,17 +38,7 @@ use syn::*;
 pub(crate) fn create_ret_struct(grad_info: DiffArgs, sig: syn::Signature) -> syn::ItemStruct {
     let grad_name = grad_info.grad_fnc_name;
     let generics = sig.generics;
-    let path: syn::Path = syn::Path {
-        leading_colon: std::option::Option::None,
-        segments: Punctuated::new(),
-    };
-    let attrs: Vec<syn::Attribute> = vec![syn::Attribute {
-        pound_token: Default::default(),
-        style: syn::AttrStyle::Outer,
-        bracket_token: Default::default(),
-        path,
-        tokens: quote! {repr(C)},
-    }];
+    let attrs: Vec<syn::Attribute> = vec![repr_c_attr(), derive_attr()];
     let vis = syn::Visibility::Inherited;
     let struct_token: Token![struct] = Default::default();
     let ident = syn::Ident::new(&(grad_name.to_string() + "_ret"), grad_name.span());
