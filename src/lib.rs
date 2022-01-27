@@ -48,6 +48,33 @@ pub(crate) struct DiffArgs {
     parallel_context: bool,
 }
 
+// only append no_mangle if not already in there
+fn append_no_mangle(item: &mut ItemFn) {
+    let nomangle_attr = Attribute {
+        pound_token: Default::default(),
+        style: AttrStyle::Outer,
+        bracket_token: Default::default(),
+        path: Path {
+            leading_colon: None,
+            segments: Punctuated::new(),
+        },
+        tokens: quote! { no_mangle },
+    };
+
+    // don't add it multiple times
+    for attr in item.attrs.iter() {
+        let attr_ps = &attr.path.segments;
+        if attr_ps.len() == 1 {
+            // no_mangle attr has one segment
+            let id = attr_ps[0].ident.to_string();
+            if id == *"no_mangle".to_owned() {
+                return;
+            }
+        }
+    }
+    item.attrs.push(nomangle_attr);
+}
+
 /// This one is a preview for the differentiate macro, but adjusted for oxide-enzyme.
 /// It will generate and wrap the extern "C" section users had to write previously
 /// It's still based on the C-ABI, so all the related issues still apply,
@@ -55,14 +82,15 @@ pub(crate) struct DiffArgs {
 #[proc_macro_attribute]
 pub fn differentiate_ext(attr: TokenStream, item: TokenStream) -> TokenStream {
     let input: DiffArgs = parse_macro_input!(attr as DiffArgs);
-    let mut out = TS2::from(item.clone());
-    let primary_fnc: ItemFn = parse_macro_input!(item as ItemFn);
+    let mut primary_fnc: ItemFn = parse_macro_input!(item as ItemFn);
+    append_no_mangle(&mut primary_fnc);
     let mut fnc = ForeignItemFn {
         semi_token: token::Semi::default(),
-        attrs: vec![], //primary_fnc.attrs,
-        vis: primary_fnc.vis,
-        sig: primary_fnc.sig,
+        attrs: vec![],
+        vis: primary_fnc.vis.clone(),
+        sig: primary_fnc.sig.clone(),
     };
+    let mut out = primary_fnc.to_token_stream();
     adjust_name(input.grad_fnc_name.clone(), &mut fnc);
     let ret_struct_def: Option<syn::ItemStruct> = adjust_parameters(input, &mut fnc);
     let ext_block: TS2 = quote! {
