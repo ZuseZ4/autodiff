@@ -3,8 +3,8 @@
 
 use autodiff::differentiate_ext;
 
-// #[differentiate_ext(d_a2, Reverse, PerInput(Constant, Active), None, false)]
-// #[differentiate_ext(d_a3, Reverse, PerInput(Gradient, Constant), None, false)]
+#[differentiate_ext(d_a2, Reverse, PerInput(Constant, Active), None, false)]
+#[differentiate_ext(d_a3, Reverse, PerInput(Gradient, Constant), None, false)]
 #[differentiate_ext(d_a1, Reverse, PerInput(Gradient, Active), None, false)]
 fn a(x: &mut f32, y: f32) {
     *x *= y

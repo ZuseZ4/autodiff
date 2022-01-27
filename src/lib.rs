@@ -59,7 +59,7 @@ pub fn differentiate_ext(attr: TokenStream, item: TokenStream) -> TokenStream {
     let primary_fnc: ItemFn = parse_macro_input!(item as ItemFn);
     let mut fnc = ForeignItemFn {
         semi_token: token::Semi::default(),
-        attrs: primary_fnc.attrs,
+        attrs: vec![], //primary_fnc.attrs,
         vis: primary_fnc.vis,
         sig: primary_fnc.sig,
     };
