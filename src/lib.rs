@@ -117,12 +117,6 @@ fn make_field(ty: syn::Type, arg_name: String) -> syn::Field {
         ty,
     }
 }
-fn make_type(arg: FnArg) -> syn::Type {
-    match arg {
-        FnArg::Receiver(_) => panic!("self not supported!"),
-        FnArg::Typed(pat_ty) => *pat_ty.ty,
-    }
-}
 
 fn adjust_output_parameters(
     extra_out_params: Vec<syn::Type>,
@@ -200,11 +194,16 @@ fn adjust_output_parameters(
     let type_path: syn::TypePath = syn::TypePath { qself: None, path };
     let inner_type: Box<syn::Type> = Box::new(syn::Type::Path(type_path));
     fnc.sig.output = syn::ReturnType::Type(Default::default(), inner_type);
-    //panic!("FPP");
 
     Some(new_ret_struct)
 }
 
+fn make_type(arg: FnArg) -> syn::Type {
+    match arg {
+        FnArg::Receiver(_) => panic!("self not supported!"),
+        FnArg::Typed(pat_ty) => *pat_ty.ty,
+    }
+}
 fn handle_param(
     act: Activity,
     param: syn::FnArg,
@@ -227,12 +226,22 @@ fn handle_param(
         }
         Activity::Gradient | Activity::Duplicated => {
             // Dup and Gradient require ref type
-            let ty = make_type(param.clone());
-            match ty {
-                Type::Ptr(_) | Type::Reference(_) => {},
-                _ => panic!("Duplicated and Gradient shall only be used for Pointers or References! Use Active instead."),
-            }
-            inputs.push(param);
+            if let FnArg::Typed(mut pat_ty) = param {
+                match *pat_ty.ty {
+                    // We modify the shaddow to make sure it's mutable, 
+                    // since we will add the gradients to it.
+                    Type::Ptr(ref mut ty_ptr) => {
+                        ty_ptr.mutability = Some(Default::default());
+                    },
+                    Type::Reference(ref mut ty_ref) => {
+                        ty_ref.mutability = Some(Default::default());
+                    },
+                    _ => panic!("Duplicated and Gradient shall only be used for Pointers or References! Use Active instead."),
+                }
+                inputs.push(FnArg::Typed(pat_ty));
+            } else {
+                panic!("self not supported!")
+            };
         }
         Activity::Constant => {}
     }
@@ -263,6 +272,7 @@ fn adjust_input_parameters(info: Granularity, fnc: &mut ForeignItemFn) -> Vec<sy
             &mut ret_grad_extra_args,
         )
     }
+    fnc.sig.inputs = new_params;
     ret_grad_extra_args
 }
 
