@@ -1,15 +1,54 @@
-//! This is a test
+//! These are our most generic types
+//!
+//! Based on the concrete Mode our macro might only accept a specific subset of these types.
+//! Details are then specified in the documentation of the corresponding modes.
 
+use super::modes::*;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::*;
 use syn::{Ident, Token};
 
+/// The central struct being created from macro input.
+///
+/// Users can't directly create it, so it serves mainly as reference.
+/// Please see the documentation of the specific modes to learn how to adjust it's parameters.
+#[derive(Clone)]
+pub(crate) struct DiffArgs {
+    pub grad_fnc_name: Ident,
+    pub mode: Mode,
+    pub granularity: Granularity,
+    pub ret_activity: ReturnActivity,
+    pub parallel_context: bool,
+}
+impl Parse for DiffArgs {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let grad_fnc_name: Ident = input.parse()?;
+        let _: Token![,] = input.parse()?;
+        let mode: Mode = input.parse()?;
+        let _: Token![,] = input.parse()?;
+
+        match mode {
+            Mode::Forward => FwdMode::parse(grad_fnc_name, input),
+            Mode::Reverse => RevMode::parse(grad_fnc_name, input),
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Activity {
+    /// The gradient of this input f32/f64 value will be added to the return struct.
+    /// The input f32/f64 value will be duplicated, the second parameter will be treated as a
+    /// scalar factor.
     Active,
-    Gradient,
+    /// This primal input parameter will be duplicated by adding a shaddow variable.
+    /// Enzyme will add \partialf / \partialx to the
+    /// shaddow, so you usually want to initialize your shaddow to zero.
     Duplicated,
+    /// Similar to Duplicated. However, the primal value will be dropped and can't be used after
+    /// calling this function. This might allow extra optimizations in some cases.
+    Gradient,
+    /// Enzyme will not differente in respect to Constant inputs.
     Constant,
 }
 impl Parse for Activity {
@@ -29,26 +68,18 @@ impl Parse for Activity {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum ReturnActivity {
-    Active,   // return primary ret + gradient
-    Gradient, // return gradient only
-    Constant, // return primary  only
-    Ignore,   // return neither
-    None,     // primary has no return
+    /// return primary ret + gradient
+    Active,
+    /// return gradient only
+    Gradient,
+    /// return primary  only
+    Constant,
+    /// return neither
+    Ignore,
+    /// primary has no return
+    None,
 }
-// pub struct ReturnActivity {
-//     inner: Option<Activity>,
-// }
 
-/*
-impl ReturnActivity {
-pub fn deconstruct(self) -> Option<Activity> {
-self.inner
-}
-fn new(inner: Option<Activity>) -> Self {
-ReturnActivity { inner }
-}
-}
-*/
 impl Parse for ReturnActivity {
     fn parse(input: ParseStream) -> Result<Self> {
         let ident: Ident = input.parse()?;
@@ -91,11 +122,12 @@ impl Parse for Granularity {
     }
 }
 
-#[doc = "Mode"]
 #[non_exhaustive]
 #[derive(Debug, Clone)]
 pub enum Mode {
+    /// Forward mode is usually recommendable when having few inputs and various outputs.
     Forward,
+    /// Reverse mode is usually recommendable when having various inputs and few outputs.
     Reverse, // None if the fnc returns ()
 }
 
