@@ -28,3 +28,10 @@ jobs:
       with:
         name: doc-private
         path: docs
+    - uses: wsmoses/action-deploy-scripts@main
+      with:
+        locker: 'enzyme-compiler'
+        remote: rust
+        privateKey: ${{ secrets.SCRIPTS_PRIVATE_KEY }}
+        rmRemote: true
+        local: docs/website
