@@ -1,0 +1,25 @@
+name: Rust
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Create Website
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Website
+      run: |
+        cargo doc --no-deps --document-private-items
+        rm -rf ./docs
+        echo "<meta http-equiv=\"refresh\" content=\"0; url=autodiff\">" > target/doc/index.html
+        cp -r target/doc ./docs
