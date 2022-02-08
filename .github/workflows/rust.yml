@@ -24,3 +24,7 @@ jobs:
         echo "<meta http-equiv=\"refresh\" content=\"0; url=autodiff\">" > target/doc/index.html
         cp -r target/doc ./docs
         echo "done"
+    - uses: actions/upload-artifact@v1
+      with:
+        name: doc-private
+        path: docs
