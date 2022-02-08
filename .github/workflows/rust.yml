@@ -18,7 +18,8 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Website
-      run: cargo doc --no-deps --document-private-items
-           rm -rf ./docs
-           echo "<meta http-equiv=\"refresh\" content=\"0; url=autodiff\">" > target/doc/index.html
-           cp -r target/doc ./docs
+      run: |
+        cargo doc --no-deps --document-private-items
+        rm -rf ./docs
+        echo "<meta http-equiv=\"refresh\" content=\"0; url=autodiff\">" > target/doc/index.html
+        cp -r target/doc ./docs
