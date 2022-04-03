@@ -109,6 +109,6 @@ pub(crate) fn adjust_parameters(
 ) -> Option<syn::ItemStruct> {
     match input.mode {
         Mode::Reverse => reverse::adjust_parameters(input, fnc),
-        Mode::Forward => forward::adjust_parameters(input, fnc),
+        Mode::Forward(_) => forward::adjust_parameters(input, fnc),
     }
 }

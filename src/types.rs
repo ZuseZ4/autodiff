@@ -3,6 +3,8 @@
 //! Based on the concrete Mode our macro might only accept a specific subset of these types.
 //! Details are then specified in the documentation of the corresponding modes.
 
+use std::num::NonZeroU32;
+
 use super::modes::*;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
@@ -29,7 +31,7 @@ impl Parse for DiffArgs {
         let _: Token![,] = input.parse()?;
 
         match mode {
-            Mode::Forward => FwdMode::parse(grad_fnc_name, input),
+            Mode::Forward(width) => FwdMode::parse(grad_fnc_name, input, width),
             Mode::Reverse => RevMode::parse(grad_fnc_name, input),
         }
     }
@@ -122,26 +124,40 @@ impl Parse for Granularity {
     }
 }
 
+pub type Width = NonZeroU32;
+
 #[non_exhaustive]
 #[derive(Debug, Clone)]
 pub enum Mode {
     /// Forward mode is usually recommendable when having few inputs and various outputs.
-    Forward,
+    Forward(Width),
     /// Reverse mode is usually recommendable when having various inputs and few outputs.
     Reverse, // None if the fnc returns ()
+}
+mod kw {
+    syn::custom_keyword!(Forward);
+    syn::custom_keyword!(Reverse);
 }
 
 impl Parse for Mode {
     fn parse(input: ParseStream) -> Result<Self> {
-        let mode: Ident = input.parse()?;
-
-        // (maybe?) TODO: replace unimplemented with syn::error
-        let mode_str = mode.to_string();
-        let res = match mode_str.as_str() {
-            "Forward" => Mode::Forward,
-            "Reverse" => Mode::Reverse,
-            _ => unimplemented!("Expected forward or Reverse. got {}", mode_str),
-        };
-        Ok(res)
+        let lookahead = input.lookahead1();
+        if lookahead.peek(kw::Reverse) {
+            input.parse::<kw::Reverse>()?;
+            Ok(Mode::Reverse)
+        } else if lookahead.peek(kw::Forward) {
+            input.parse::<kw::Forward>()?;
+            if lookahead.peek(Token![,]) {
+                Ok(Mode::Forward(NonZeroU32::new(1).unwrap()))
+            } else {
+                let content;
+                let _paren_token = parenthesized!(content in input);
+                let lit: LitInt = content.parse()?;
+                let val = lit.base10_parse::<NonZeroU32>()?;
+                Ok(Mode::Forward(val))
+            }
+        } else {
+            Err(lookahead.error())
+        }
     }
 }

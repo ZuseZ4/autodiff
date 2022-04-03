@@ -6,7 +6,7 @@ use syn::punctuated::Punctuated;
 use syn::{parenthesized, Ident};
 use syn::{parse::ParseStream, LitBool, Token};
 
-use crate::types::{Activity, DiffArgs, Granularity, Mode, ReturnActivity};
+use crate::types::{Activity, DiffArgs, Granularity, Mode, ReturnActivity, Width};
 
 use super::default;
 
@@ -128,6 +128,7 @@ impl From<FwdGranularity> for Granularity {
 pub(crate) fn parse(
     grad_fnc_name: proc_macro2::Ident,
     input: ParseStream,
+    width: Width,
 ) -> Result<DiffArgs, syn::Error> {
     let granularity: FwdGranularity = input.parse()?;
     let _: Token![,] = input.parse()?;
@@ -136,7 +137,7 @@ pub(crate) fn parse(
     let parallel_context: LitBool = input.parse()?;
     Ok(DiffArgs {
         grad_fnc_name,
-        mode: Mode::Forward,
+        mode: Mode::Forward(width),
         granularity: granularity.into(),
         ret_activity: ret_activity.into(),
         parallel_context: parallel_context.value,
