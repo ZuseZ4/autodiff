@@ -1,5 +1,7 @@
-use super::DiffArgs;
-use super::ReturnActivity::*;
+use crate::modes::reverse::ReturnActivity;
+
+use super::DiffMode;
+//use super::ReturnActivity::*;
 use quote::quote;
 use syn::punctuated::Punctuated;
 use syn::Token;
@@ -35,8 +37,8 @@ fn repr_c_attr() -> Attribute {
 // We need to define a new return struct,
 // since tuples are not stable / usable trough the c-abi.
 //pub fn create_ret_struct(grad_name: Ident, sig: syn::Signature) -> syn::ItemStruct {
-pub(crate) fn create_ret_struct(grad_info: DiffArgs, sig: syn::Signature) -> syn::ItemStruct {
-    let grad_name = grad_info.grad_fnc_name;
+pub(crate) fn create_ret_struct(grad_info: DiffMode, sig: syn::Signature) -> syn::ItemStruct {
+    let grad_name = grad_info.name();
     let generics = sig.generics;
     let attrs: Vec<syn::Attribute> = vec![repr_c_attr(), derive_attr()];
     let vis = syn::Visibility::Inherited;
@@ -48,10 +50,10 @@ pub(crate) fn create_ret_struct(grad_info: DiffArgs, sig: syn::Signature) -> syn
     };
     // If our primary function returns something, we might ad that to our return struct
     if let ReturnType::Type(_, box_ty) = sig.output {
-        match grad_info.ret_activity {
-            None => unreachable!(), // No primary return value exists.
-            Gradient | Ignore => {} // The primary return value will be optimized away.
-            Active | Constant => {
+        match grad_info.ret() {
+            ReturnActivity::None => unreachable!(), // No primary return value exists.
+            ReturnActivity::Gradient | ReturnActivity::Ignore => {} // The primary return value will be optimized away.
+            ReturnActivity::Active | ReturnActivity::Constant => {
                 // for all other cases, append the primary return value to our return struct
                 let primary_id = Ident::new("primary_ret", proc_macro2::Span::mixed_site());
                 let field = Field {

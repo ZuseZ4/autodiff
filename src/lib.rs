@@ -8,8 +8,6 @@
 #![allow(unused_macros)]
 #![doc(html_logo_url = "https://enzyme.mit.edu//logo.svg")]
 
-use std::fmt;
-
 use modes::{forward, reverse};
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TS2;
@@ -19,11 +17,10 @@ use syn::token;
 use syn::*;
 
 mod types;
-use types::{DiffArgs, Mode, ReturnActivity};
+use types::DiffMode;
 #[doc(hidden)]
 mod helper;
 mod modes;
-// use modes::{FwdMode, RevMode};
 
 #[doc(hidden)]
 // only append no_mangle if not already in there
@@ -60,7 +57,7 @@ fn append_no_mangle(item: &mut ItemFn) {
 /// but at least it's nicer to use.
 #[proc_macro_attribute]
 pub fn differentiate_ext(attr: TokenStream, item: TokenStream) -> TokenStream {
-    let input: DiffArgs = parse_macro_input!(attr as DiffArgs);
+    let input: DiffMode = parse_macro_input!(attr as DiffMode);
     let mut primary_fnc: ItemFn = parse_macro_input!(item as ItemFn);
     append_no_mangle(&mut primary_fnc);
     let mut fnc = ForeignItemFn {
@@ -70,7 +67,7 @@ pub fn differentiate_ext(attr: TokenStream, item: TokenStream) -> TokenStream {
         sig: primary_fnc.sig.clone(),
     };
     let mut out = primary_fnc.to_token_stream();
-    adjust_name(input.grad_fnc_name.clone(), &mut fnc);
+    adjust_name(input.name(), &mut fnc);
     let ret_struct_def: Option<syn::ItemStruct> = adjust_parameters(input, &mut fnc);
     let ext_block: TS2 = quote! {
         extern "C" { #fnc }
@@ -92,23 +89,13 @@ fn adjust_name(new_name: syn::Ident, fnc: &mut ForeignItemFn) {
     fnc.sig.ident = new_name;
 }
 
-impl fmt::Display for DiffArgs {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "primary: {} \nmode: {:?} \ngranularity: {:?} \nparallel_context: {} \n",
-            self.grad_fnc_name, self.mode, self.granularity, self.parallel_context
-        )
-    }
-}
-
 #[doc(hidden)]
 pub(crate) fn adjust_parameters(
-    input: DiffArgs,
+    input: DiffMode,
     fnc: &mut ForeignItemFn,
 ) -> Option<syn::ItemStruct> {
-    match input.mode {
-        Mode::Reverse => reverse::adjust_parameters(input, fnc),
-        Mode::Forward(_) => forward::adjust_parameters(input, fnc),
+    match input {
+        DiffMode::Fwd(f) => forward::adjust_parameters(f, fnc),
+        DiffMode::Rev(r) => reverse::adjust_parameters(r, fnc),
     }
 }

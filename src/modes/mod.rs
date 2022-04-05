@@ -1,6 +1,5 @@
 //! An overview of the AD modes which we support
 #[doc(hidden)]
-mod default;
 pub mod forward;
 pub mod reverse;
 
