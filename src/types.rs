@@ -32,8 +32,8 @@ impl DiffMode {
     }
     pub(crate) fn ret(&self) -> ReturnActivity {
         match self {
-            DiffMode::Fwd(f) => f.return_activity.clone().into(),
-            DiffMode::Rev(r) => r.return_activity.clone(),
+            DiffMode::Fwd(f) => f.return_activity.into(),
+            DiffMode::Rev(r) => r.return_activity,
         }
     }
 }
@@ -82,7 +82,7 @@ impl Parse for Mode {
             Ok(Mode::Reverse)
         } else if lookahead.peek(kw::Forward) {
             input.parse::<kw::Forward>()?;
-            if lookahead.peek(Token![,]) {
+            if input.peek(Token![,]) {
                 Ok(Mode::Forward(NonZeroU32::new(1).unwrap()))
             } else {
                 let content;

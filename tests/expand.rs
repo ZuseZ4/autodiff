@@ -25,6 +25,7 @@ fn d1(x: f32) -> f32 {
     2.0 * x
 }
 #[differentiate_ext(d_d, Reverse, All(Active), Active, false)]
+#[differentiate_ext(dfwd_d, Forward, All(Duplicated), Active, false)]
 fn d(x: f32) -> f32 {
     2.0 * x
 }
