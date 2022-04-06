@@ -25,7 +25,6 @@ fn d1(x: f32) -> f32 {
     2.0 * x
 }
 #[differentiate_ext(d_d, Reverse, All(Active), Active, false)]
-#[differentiate_ext(dfwd_d, Forward, All(Duplicated), Active, false)]
 fn d(x: f32) -> f32 {
     2.0 * x
 }
@@ -44,8 +43,4 @@ fn e(x: &mut f32) {
 #[differentiate_ext(d_f, Reverse, PerInput(Duplicated, Active), Ignore, false)]
 fn f(x: &f32, y: f32) -> f32 {
     *x * y
-}
-
-pub fn main() {
-    print!("Hello World!");
 }

@@ -102,10 +102,8 @@ pub(crate) fn adjust_output_parameters(
         if let syn::Fields::Named(ref mut inner) = new_ret_struct.fields {
             let grad_name = "primary_grad".to_owned();
             let width_u32 = u32::from(infos.width);
-            inner
-                .named
-                .push(make_field(prev_ret.clone(), grad_name.clone()));
             if width_u32 == 1 {
+                inner.named.push(make_field(prev_ret, grad_name));
             } else {
                 // Forward-Mode-Vector
                 for i in 0..width_u32 {
