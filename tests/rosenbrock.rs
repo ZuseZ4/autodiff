@@ -7,8 +7,8 @@ use autodiff::differentiate_ext;
 // therefore we can't pass control as a Vector or Slice directly.
 
 #[differentiate_ext(d_rb_rev, Reverse, PerInput(Gradient, Constant), Ignore, false)]
-#[differentiate_ext(d_rb_fwd, Forward, PerInput(Duplicated, Constant), Gradient, false)]
-#[differentiate_ext(d_rb_fwd4, Forward(8), PerInput(Duplicated, Constant), Gradient, false)]
+#[differentiate_ext(d_rb_fwd, Forward, PerInput(Duplicated, Constant), Gradient)]
+#[differentiate_ext(d_rb_fwd4, Forward(8), PerInput(Duplicated, Constant), Gradient)]
 fn rosenbrock(control: *mut f64, n: usize) -> f64 {
     let control = unsafe { Vec::from_raw_parts(control, n, n) };
     let b = 100.0;

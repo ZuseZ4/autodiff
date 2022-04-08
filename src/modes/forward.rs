@@ -5,7 +5,7 @@ use std::fmt;
 use syn::parse::Parse;
 use syn::punctuated::Punctuated;
 use syn::{parenthesized, FnArg, ForeignItemFn, Ident};
-use syn::{parse::ParseStream, LitBool, Token};
+use syn::{parse::ParseStream, Token};
 
 use crate::helper::create_ret_struct;
 use crate::types::{self, DiffMode, Width};
@@ -43,7 +43,6 @@ pub(crate) struct FwdInfo {
     pub width: Width,
     pub input_activity: FwdGranularity,
     pub return_activity: FwdReturnActivity,
-    pub parallel_context: bool,
 }
 
 //
@@ -229,10 +228,9 @@ impl fmt::Display for FwdInfo {
             "fwd-mode"
         };
         let name = self.grad_fnc_name.to_string();
-        let par = self.parallel_context;
         let output = format!(
-            "handling {name}\nusing {mode}\nwith input activity TODO\nwith output activity TODO\nparallel-context: {par}"
-            );
+            "handling {name}\nusing {mode}\nwith input activity TODO\nwith output activity TODO"
+        );
         write!(f, "{output}")
     }
 }
@@ -246,15 +244,12 @@ pub(crate) fn parse(
     let granularity: FwdGranularity = input.parse()?;
     let _: Token![,] = input.parse()?;
     let return_activity: FwdReturnActivity = input.parse()?;
-    let _: Token![,] = input.parse()?;
-    let parallel_context: LitBool = input.parse()?;
 
     let res = types::DiffMode::Fwd(FwdInfo {
         grad_fnc_name,
         width,
         input_activity: granularity,
         return_activity,
-        parallel_context: parallel_context.value,
     });
     Ok(res)
 }
